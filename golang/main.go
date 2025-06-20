@@ -48,30 +48,22 @@ func fetchPR(url string) PullRequest {
 }
 
 func fetchAllPRs(searchResult SearchIssuesResult) []PullRequest {
-    var (
-        prs []PullRequest
-        mu  sync.Mutex       // protects prs slice
-        wg  sync.WaitGroup   // waits for all fetches
-    )
+    n := len(searchResult.Items)
+    prs := make([]PullRequest, n)
+    var wg sync.WaitGroup
+    wg.Add(n)
 
-    // Pre-allocate if you know the count
-    prs = make([]PullRequest, 0, len(searchResult.Items))
-
-    wg.Add(len(searchResult.Items))             // 1
-    for _, pr := range searchResult.Items {
-        go func(prItem SearchItem) {                // 2
-            defer wg.Done()                     // 3
-
-            details := fetchPR(prItem.PullRequest.URL)
-            mu.Lock()                           // 4
-            prs = append(prs, details)
-            mu.Unlock()
-        }(pr)
+    for i, item := range searchResult.Items {
+        go func(idx int, prItem SearchItem) {
+            defer wg.Done()
+            prs[idx] = fetchPR(prItem.PullRequest.URL)
+        }(i, item)
     }
 
-    wg.Wait()                                   // 5
+    wg.Wait()
     return prs
 }
+
 
 func main() {
     searchParams := map[string]string{
