@@ -17,7 +17,8 @@ type SearchIssuesResult struct {
     Items []SearchItem `json:"items"`
 }
 
-func fetchPR(url string) PullRequest {
+func fetchPR(url string, idx int, prs []PullRequest, wg *sync.WaitGroup) {
+    defer wg.Done()
     var prDetail PrDetail
     if err := fetchGH(url, nil, &prDetail); err != nil {
         fmt.Fprintf(os.Stderr, "Error fetching PR details: %v\n", err)
@@ -44,7 +45,7 @@ func fetchPR(url string) PullRequest {
         Commits:  commits,
     }
 
-    return fullPR
+    prs[idx] = fullPR
 }
 
 func fetchAllPRs(searchResult SearchIssuesResult) []PullRequest {
@@ -53,17 +54,13 @@ func fetchAllPRs(searchResult SearchIssuesResult) []PullRequest {
     var wg sync.WaitGroup
     wg.Add(n)
 
-    for i, item := range searchResult.Items {
-        go func(idx int, prItem SearchItem) {
-            defer wg.Done()
-            prs[idx] = fetchPR(prItem.PullRequest.URL)
-        }(i, item)
+    for i, prItem := range searchResult.Items {
+        go fetchPR(prItem.PullRequest.URL, i, prs, &wg)
     }
 
     wg.Wait()
     return prs
 }
-
 
 func main() {
     searchParams := map[string]string{
