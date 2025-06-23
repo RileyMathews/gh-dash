@@ -20,11 +20,6 @@ type GithubRepo struct {
 	Owner    GithubUser `json:"owner"`
 }
 
-// Base contains the repository info for a PR (part of PR details)
-type Base struct {
-	Repo GithubRepo `json:"repo"`
-}
-
 type GithubUrl struct {
 	Href string `json:"href"`
 }
@@ -42,10 +37,12 @@ type PrReview struct {
 
 // Pull Request detail (basic PR info and links to related resources)
 type PrDetail struct {
-	Title       string     `json:"title"`
-	State       string     `json:"state"`
-	Number      int        `json:"number"`
-	Base        Base       `json:"base"`
+	Title  string `json:"title"`
+	State  string `json:"state"`
+	Number int    `json:"number"`
+	Base   struct {
+		Repo GithubRepo `json:"repo"`
+	} `json:"base"`
 	CommitsURL  string     `json:"commits_url"`
 	CommentsURL string     `json:"comments_url"`
 	CreatedAt   time.Time  `json:"created_at"`
@@ -53,16 +50,17 @@ type PrDetail struct {
 	UiUrl       string     `json:"issue_url"`
 	Links       PrLinks    `json:"_links"`
 	Draft       bool       `json:"draft"`
-	Head        PrHead     `json:"head"`
-}
-
-type CheckRun struct {
-	Conclusion string `json:"conclusion"`
-	Status     string `json:"status"`
+	Head        struct {
+		Ref  string     `json:"ref"`
+		Repo GithubRepo `json:"repo"`
+	} `json:"head"`
 }
 
 type PrCheckRunsResponse struct {
-	CheckRuns []CheckRun `json:"check_runs"`
+	CheckRuns []struct {
+		Conclusion string `json:"conclusion"`
+		Status     string `json:"status"`
+	} `json:"check_runs"`
 }
 
 // Comment on a PR (we capture the author and creation time)
@@ -71,25 +69,13 @@ type Comment struct {
 	CreatedAt time.Time  `json:"created_at"`
 }
 
-// Commit author details (from the commit object in a PR commit)
-type CommitAuthor struct {
-	Name  string    `json:"name"`
-	Email string    `json:"email"`
-	Date  time.Time `json:"date"`
-}
-
 // Commit holds commit metadata (we include only the author sub-structure here)
 type Commit struct {
-	Author CommitAuthor `json:"author"`
-}
-
-type GithubRepository struct {
-	FullName string `json:"full_name"`
-}
-
-type PrHead struct {
-	Ref  string           `json:"ref"`
-	Repo GithubRepository `json:"repo"`
+	Author struct {
+		Name  string    `json:"name"`
+		Email string    `json:"email"`
+		Date  time.Time `json:"date"`
+	} `json:"author"`
 }
 
 // PR commit entry, including the GitHub user (author) and the commit details
