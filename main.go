@@ -6,6 +6,7 @@ import (
 	"sort"
 	"strings"
 	"sync"
+	"time"
 )
 
 const (
@@ -106,7 +107,7 @@ func getActions(pr PullRequest) []Action {
 		if strings.Contains(review.User.Login, "[bot]") {
 			continue
 		}
-		if newestReview == nil || newestReview.SubmittedAt.After(newestReview.SubmittedAt) {
+		if newestReview == nil || review.SubmittedAt.After(newestReview.SubmittedAt) {
 			newestReview = &review
 		}
 	}
@@ -247,9 +248,15 @@ func processPr(pr PullRequest) ProcessedPr {
 func printPrDetails(pr ProcessedPr) {
 	fmt.Printf("PR:          %s%s %s| %s\n", RED, pr.RawPr.Pr.User.Login, RESET, pr.RawPr.Pr.Title)
 	fmt.Printf("Url:         %s\n", pr.RawPr.Pr.Links.Html.Href)
+
+	local, err := time.LoadLocation("Local")
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error loading local time zone: %v\n", err)
+		os.Exit(1)
+	}
 	fmt.Printf("Actions:     ")
 	for _, action := range pr.Actions {
-		fmt.Printf("%s%s %sby %s%s %s| ", GREEN, action.Type, RESET, RED, action.User, RESET)
+		fmt.Printf("%s%s %sby %s%s%s at %s%s%s | ", GREEN, action.Type, RESET, RED, action.User, RESET, YELLOW, action.Time.In(local).Format(time.RFC822), RESET)
 	}
 	fmt.Printf("\n")
 
